@@ -22,7 +22,7 @@ def who_is_melchior(nick, msg):
 
 To say something perodically,
 
-```
+```python
 @periodic(5)
 def time():
     import time
