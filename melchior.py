@@ -11,7 +11,6 @@ parser.add_argument('--channel', required=True)
 parser.add_argument('--port', required=False)
 parser.add_argument('--ssl', required=False, action='store_true')
 parser.add_argument('--password', required=False)
-parser.add_argument('--watch', required=False)
 parser.add_argument('--nick', required=False, default='melchior')
 args = parser.parse_args()
 assert set(['host', 'port', 'password', 'channel']) <= set(vars(args).keys())
@@ -30,8 +29,13 @@ sock.sendall('''NICK %s\r
 USER melchior melchiorbot %s bla :Melchior\r
 ''' % (args.nick, args.host))
 
-last_watch_time = time.time()
-last_watch_outp = None
+# Schedule the first round of periodic behaviors,
+periodic_schedule = [(time.time() + t, t, f) for t, f in behavior.periodics]
+
+def maybe_say_in_channel(msg):
+    if msg:
+        sock.sendall('PRIVMSG #%s :%s\r\n' % (args.channel, msg))
+
 read_buffer = ''
 while True:
     time.sleep(0.25)
@@ -63,26 +67,24 @@ while True:
                     # Cannot join til after given mode.
                     sock.sendall('JOIN #%s\r\n' % args.channel)
                 elif (parts[0] == 'PRIVMSG') and (parts[1] == '#%s' % args.channel):
-                    # Do what the behavior specifies..
-                    for method in behavior.methods:
-                        response = method(nick, ' '.join([parts[2][1:]] + parts[3:]))
-                        if response:
-                            sock.sendall('PRIVMSG #%s :%s\r\n' % (args.channel, response))
-    except:
+                    # Call all 'listeners'
+                    for method in behavior.listeners:
+                        maybe_say_in_channel(method(nick, ' '.join([parts[2][1:]] + parts[3:])))
+                    # 'responders' only speak when spoken to.
+                    if parts[2][1:].startswith(args.nick):
+                        for method in behavior.responders:
+                            maybe_say_in_channel(method(nick, ' '.join(parts[3:])))
+                            
+    except socket.error, ssl.SSLError:
         # nonblocking i/o raises an exception when there's nothing to be read
         pass
 
-    # Check the watch if last watch happened 5s ago
-    now = time.time()
-    if args.watch and (now - 5 > last_watch_time):
-        last_watch_time = now
-        try:
-            outp = subprocess.check_output(args.watch, shell=True)
-            if outp != last_watch_outp:
-                for line in outp.split('\n'):
-                    sock.sendall('PRIVMSG #%s :%s\n' % (args.channel, line))
-                last_watch_outp = outp
-        except:
-            pass
-        
-
+    # Deal with any periodic operations
+    new_periodic_schedule = []
+    for t, dt, method in periodic_schedule:
+        if time.time() > t:
+            maybe_say_in_channel(method())
+            new_periodic_schedule.append((time.time() + dt, dt, method))
+        else:
+            new_periodic_schedule.append((t, dt, method))
+    periodic_schedule = new_periodic_schedule

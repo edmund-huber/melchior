@@ -6,7 +6,25 @@ channel, add something to behavior.py . For example, to repeat what
 someone just said,
 
 ```python
-@method
+@listener
 def echo(nick, msg):
     return '%s said "%s"' % (nick, msg)
+```
+
+To respond to a user,
+
+```python
+@responder
+def who_is_melchior(nick, msg):
+    if msg == 'who are you':
+        return '%s, i am a bot.' % nick
+```
+
+To say something perodically,
+
+```
+@periodic(5)
+def time():
+    import time
+    return 'the time is %s' % time.asctime()
 ```
