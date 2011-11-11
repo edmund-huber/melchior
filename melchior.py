@@ -1,6 +1,6 @@
 import socket, ssl, sys
 
-host, port, passw = sys.argv[1:]
+host, port, passw, chan = sys.argv[1:]
 
 ssl_sock = ssl.wrap_socket(socket.socket())
 ssl_sock.connect((host, int(port)))
@@ -24,6 +24,7 @@ while True:
     
     # Deal with messages.
     for line in lines:
+        print line
         parts = line.strip().split()
         if parts:
             if parts[0].startswith(':'):
@@ -32,4 +33,4 @@ while True:
                 ssl_sock.sendall('PONG %s\n' % parts[1])
             elif parts[0] == 'MODE':
                 # Cannot join til after given mode.
-                ssl_sock.sendall('JOIN #photoz\n')
+                ssl_sock.sendall('JOIN #%s\n' % chan)
