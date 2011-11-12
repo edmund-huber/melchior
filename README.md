@@ -18,6 +18,7 @@ has the letter 'a' somewhere in it,
 
 ```python
 import melchior
+
 @melchior.listener
 def echo(nick, msg):
     if 'a' in msg:
@@ -32,6 +33,7 @@ you", here's how the bot could respond,
 
 ```python
 import melchior
+
 @melchior.responder
 def who_is_melchior(nick, msg):
     if msg == 'who are you':
@@ -43,9 +45,10 @@ seconds, where N is the number given to the decorator. To tell the
 time every five seconds,
 
 ```python
+import time
 import melchior
+
 @melchior.periodic(5)
 def time():
-    import time
     return 'the time is %s' % time.asctime()
 ```

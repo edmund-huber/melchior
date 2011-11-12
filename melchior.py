@@ -22,15 +22,20 @@ def run(host, port, use_ssl, password, channel, nick, behaviors, logger=bye):
 USER melchior melchiorbot %s bla :Melchior\r
 ''' % (nick, host))
 
-    # Pick apart the list of behaviors,
-    listeners = [m for ty, args, m in behaviors if ty == BehaviorType.LISTENER]
-    responders = [m for ty, args, m in behaviors if ty == BehaviorType.RESPONDER]
-    periodics = [(args[0], m) for ty, args, m in behaviors if ty == BehaviorType.PERIODIC]
+    # Do scheduling,
+    listeners, responders, periodics = [], [], []
+    for b in behaviors:
+        ty, args, m = b
+        if ty == BehaviorType.LISTENER:
+            listeners.append(m)
+        elif ty == BehaviorType.RESPONDER:
+            responders.append(m)
+        elif ty == BehaviorType.PERIODIC:
+            (t,) = args
+            periodics.append((time.time() + t, t, m))
 
-    # Schedule the first round of periodic behaviors,
-    periodic_schedule = [(time.time() + t, t, f) for t, f in periodics]
-
-    def maybe_say_in_channel(msg):
+    def handle_method(m, *args):
+        msg = m(*args)
         if msg:
             for m in msg.split('\n'):
                 sock.sendall('PRIVMSG #%s :%s\r\n' % (channel, m))
@@ -57,7 +62,7 @@ USER melchior melchiorbot %s bla :Melchior\r
         for line in [l for l in lines if l]:
             line = line.strip()
             logger(line)
-            parts = line.strip().split()
+            parts = line.split()
             if parts:
                 nick2 = None
                 if parts[0].startswith(':'):
@@ -73,21 +78,21 @@ USER melchior melchiorbot %s bla :Melchior\r
                 elif (parts[0] == 'PRIVMSG') and (parts[1] == '#%s' % channel):
                     # Call all 'listeners'
                     for method in listeners:
-                        maybe_say_in_channel(method(nick2, ' '.join([parts[2][1:]] + parts[3:])))
+                        handle_method(method, nick2, ' '.join([parts[2][1:]] + parts[3:]))
                     # 'responders' only speak when spoken to.
                     if parts[2][1:].startswith(nick):
                         for method in responders:
-                            maybe_say_in_channel(method(nick2, ' '.join(parts[3:])))                            
+                            handle_method(method, nick2, ' '.join(parts[3:]))
 
         # Deal with any periodic operations
-        new_periodic_schedule = []
-        for t, dt, method in periodic_schedule:
+        new_periodics = []
+        for t, dt, method in periodics:
             if time.time() > t:
-                maybe_say_in_channel(method())
-                new_periodic_schedule.append((time.time() + dt, dt, method))
+                handle_method(method)
+                new_periodics.append((time.time() + dt, dt, method))
             else:
-                new_periodic_schedule.append((t, dt, method))
-        periodic_schedule = new_periodic_schedule
+                new_periodics.append((t, dt, method))
+        periodics = new_periodics
 
 class BehaviorType:
     LISTENER = 0

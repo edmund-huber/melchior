@@ -1,3 +1,5 @@
+import time
+
 import melchior
 
 @melchior.listener
@@ -13,6 +15,5 @@ def who_is_melchior(nick, msg):
         return '%s, i am a bot.' % nick
 
 @melchior.periodic(5)
-def tell_the_time():
-    import time
+def tell_the_time():    
     return 'the time is %s' % time.asctime()
