@@ -16,8 +16,8 @@ assert set(['host', 'port', 'password', 'channel']) <= set(vars(args).keys())
 def to_stdout(s):
     print s
 
-import more_behaviors.once_a_day
-
 melchior.run(args.host, args.port, args.ssl, args.password, args.channel, args.nick, [
-        more_behaviors.once_a_day.once_a_day(11, 0, 30, 'jtwang, davidh, edmund, jrheard, steng: SEO standup')
+        example_behaviors.echo,
+        example_behaviors.who_is_melchior,
+        example_behaviors.tell_the_time,
         ], logger=to_stdout)
