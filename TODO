@@ -1,0 +1,2 @@
+. add a 'help' (that also gets triggered for nonsense), that
+  will introspect and print docstrings of methods
