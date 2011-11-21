@@ -33,11 +33,11 @@ def set_reminder(who, msg):
         m = re.search(r': remind me (\d*):(\d*) ?(am|pm)?\s*(.*)$', msg)
         if m:
             remind_h, remind_m, ampm, what = int(m.group(1)), int(m.group(2)), m.group(3), m.group(4)
-            if 'pm' == ampm:
-                remind_h += 12
             year, month, day, hour, minute, second, wday, yday, isdst = time.localtime()
             remind_tm = time.mktime((year, month, day, remind_h, remind_m, 0, wday, yday, isdst))
+            if 'pm' == ampm:
+                remind_tm += 60 * 60 * 12
             reminders.append((remind_tm, who, what))
-            return '%s: reminder set for %s:%s' % (who, remind_h, remind_m)
+            return '%s: reminder set for %s' % (who, time.asctime(time.localtime(remind_tm)))
         else:
             return '%s: say something like "remind me 8:15am dentist"' % who
