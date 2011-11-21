@@ -1,2 +1,20 @@
 . add a 'help' (that also gets triggered for nonsense), that
   will introspect and print docstrings of methods
+
+. add a 'tasks' that help you keep track of how long you take on what things
+
+. multiple channel support
+
+. arbitrary JSON dump per-method so that restarts dont make sad --
+
+  @melchior.store(mystore='mydump.js')
+  @melchior.responder
+  def whachoo_say(who, msg):
+    if who in mystore: # mystore is magically in scope
+      last = mystore[who]
+      mystore[who] = msg
+      return '%s: last time you said "%s"' % (who, last)
+    else:
+      mystore[who] = msg
+
+. instead of 'return (a single string)', either yield or return a list of strings.
